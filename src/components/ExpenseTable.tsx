@@ -57,13 +57,13 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
               <td className="py-3 text-right">
                 <button
                   onClick={() => onEdit(expense)}
-                  className="mr-1 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="mr-1 rounded-md p-1.5 text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-foreground hover:scale-110 active:scale-95"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => onDelete(expense.id)}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                  className="rounded-md p-1.5 text-muted-foreground transition-all duration-150 hover:bg-destructive/20 hover:text-destructive hover:scale-110 active:scale-95"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
