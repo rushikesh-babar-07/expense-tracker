@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus } from "lucide-react";
+import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus, Loader2 } from "lucide-react";
 import SummaryCard from "@/components/SummaryCard";
 import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseModal from "@/components/AddExpenseModal";
@@ -27,6 +27,7 @@ const Dashboard = ({
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -38,8 +39,14 @@ const Dashboard = ({
     setEditingExpense(null);
   };
 
+  const withLoading = (fn: (...args: any[]) => void) => (...args: any[]) => {
+    setActionLoading(true);
+    fn(...args);
+    setTimeout(() => setActionLoading(false), 300);
+  };
+
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard title="Monthly Deposit" value={deposit} icon={<Wallet className="h-5 w-5 text-info" />} clickable onClick={() => setIsDepositModalOpen(true)} />
         <SummaryCard title="Total Spent" value={totalSpent} icon={<TrendingDown className="h-5 w-5 text-destructive" />} />
@@ -49,31 +56,34 @@ const Dashboard = ({
 
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-card-foreground">Recent Expenses</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-card-foreground">Recent Expenses</h2>
+            {actionLoading && <Loader2 className="h-4 w-4 animate-spin-slow text-primary" />}
+          </div>
           <button
             onClick={() => { setEditingExpense(null); setIsExpenseModalOpen(true); }}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all duration-200 hover:opacity-90 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-px active:translate-y-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             <Plus className="h-4 w-4" />
             Add Expense
           </button>
         </div>
-        <ExpenseTable expenses={expenses} onDelete={deleteExpense} onEdit={handleEdit} />
+        <ExpenseTable expenses={expenses} onDelete={withLoading(deleteExpense)} onEdit={handleEdit} />
       </div>
 
       <AddExpenseModal
         open={isExpenseModalOpen}
         onClose={handleCloseExpenseModal}
-        onAdd={addExpense}
-        onEdit={editExpense}
+        onAdd={withLoading(addExpense)}
+        onEdit={withLoading(editExpense)}
         editingExpense={editingExpense}
       />
       <DepositModal
         open={isDepositModalOpen}
         onClose={() => setIsDepositModalOpen(false)}
         currentDeposit={deposit}
-        onUpdate={updateDeposit}
-        onAddExtra={addToDeposit}
+        onUpdate={withLoading(updateDeposit)}
+        onAddExtra={withLoading(addToDeposit)}
       />
     </div>
   );

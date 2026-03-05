@@ -38,7 +38,7 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
         </thead>
         <tbody>
           {expenses.map((expense) => (
-            <tr key={expense.id} className="border-b border-border/50 last:border-0">
+            <tr key={expense.id} className="border-b border-border/50 last:border-0 transition-colors duration-150 hover:bg-accent/30">
               <td className="py-3 text-card-foreground">
                 {expense.name}
                 {expense.isDefault && (
@@ -57,13 +57,13 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
               <td className="py-3 text-right">
                 <button
                   onClick={() => onEdit(expense)}
-                  className="mr-1 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="mr-1 rounded-md p-1.5 text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-foreground hover:scale-110 active:scale-95"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => onDelete(expense.id)}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                  className="rounded-md p-1.5 text-muted-foreground transition-all duration-150 hover:bg-destructive/20 hover:text-destructive hover:scale-110 active:scale-95"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
