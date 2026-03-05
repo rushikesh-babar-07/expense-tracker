@@ -1,9 +1,10 @@
-import { Trash2 } from "lucide-react";
-import type { Expense } from "@/pages/Index";
+import { Trash2, Pencil } from "lucide-react";
+import type { Expense } from "@/hooks/useExpenseStore";
 
 interface ExpenseTableProps {
   expenses: Expense[];
   onDelete: (id: string) => void;
+  onEdit: (expense: Expense) => void;
 }
 
 const categoryColors: Record<string, string> = {
@@ -14,7 +15,7 @@ const categoryColors: Record<string, string> = {
   Others: "bg-muted text-muted-foreground",
 };
 
-const ExpenseTable = ({ expenses, onDelete }: ExpenseTableProps) => {
+const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
   if (expenses.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">
@@ -37,23 +38,29 @@ const ExpenseTable = ({ expenses, onDelete }: ExpenseTableProps) => {
         </thead>
         <tbody>
           {expenses.map((expense) => (
-            <tr
-              key={expense.id}
-              className="border-b border-border/50 last:border-0"
-            >
-              <td className="py-3 text-card-foreground">{expense.name}</td>
+            <tr key={expense.id} className="border-b border-border/50 last:border-0">
+              <td className="py-3 text-card-foreground">
+                {expense.name}
+                {expense.isDefault && (
+                  <span className="ml-2 rounded bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
+                    Recurring
+                  </span>
+                )}
+              </td>
               <td className="py-3">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColors[expense.category] || categoryColors.Others}`}
-                >
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColors[expense.category] || categoryColors.Others}`}>
                   {expense.category}
                 </span>
               </td>
-              <td className="py-3 text-card-foreground">
-                ${expense.amount.toFixed(2)}
-              </td>
+              <td className="py-3 text-card-foreground">₹{expense.amount.toFixed(2)}</td>
               <td className="py-3 text-muted-foreground">{expense.date}</td>
               <td className="py-3 text-right">
+                <button
+                  onClick={() => onEdit(expense)}
+                  className="mr-1 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
                 <button
                   onClick={() => onDelete(expense.id)}
                   className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
