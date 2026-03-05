@@ -38,7 +38,7 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
         </thead>
         <tbody>
           {expenses.map((expense) => (
-            <tr key={expense.id} className="border-b border-border/50 last:border-0">
+            <tr key={expense.id} className="border-b border-border/50 last:border-0 transition-colors duration-150 hover:bg-accent/30">
               <td className="py-3 text-card-foreground">
                 {expense.name}
                 {expense.isDefault && (
