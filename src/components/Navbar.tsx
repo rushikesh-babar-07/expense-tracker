@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, PiggyBank, FileDown, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarDays, PiggyBank, Settings, FileDown } from "lucide-react";
 
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -8,7 +8,11 @@ const links = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-const Navbar = () => {
+interface NavbarProps {
+  onDownloadReport?: () => void;
+}
+
+const Navbar = ({ onDownloadReport }: NavbarProps) => {
   const location = useLocation();
 
   return (
@@ -31,6 +35,15 @@ const Navbar = () => {
               </NavLink>
             );
           })}
+          {onDownloadReport && (
+            <button
+              onClick={onDownloadReport}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent"
+            >
+              <FileDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Download Report</span>
+            </button>
+          )}
         </div>
       </div>
     </nav>

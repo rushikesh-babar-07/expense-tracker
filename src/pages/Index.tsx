@@ -1,13 +1,15 @@
 import { useLocation } from "react-router-dom";
-import { useExpenseStore } from "@/hooks/useExpenseStore";
 import Dashboard from "@/components/Dashboard";
 import SavingsPage from "@/components/SavingsPage";
 import MonthlyHistoryPage from "@/components/MonthlyHistoryPage";
 import SettingsPage from "@/components/SettingsPage";
 
-const Index = () => {
+interface IndexProps {
+  store: any;
+}
+
+const Index = ({ store }: IndexProps) => {
   const location = useLocation();
-  const store = useExpenseStore();
 
   const renderPage = () => {
     switch (location.pathname) {
