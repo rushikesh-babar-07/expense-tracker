@@ -39,10 +39,10 @@ const Dashboard = ({
     setEditingExpense(null);
   };
 
-  const withLoading = (fn: (...args: any[]) => void) => (...args: any[]) => {
+  const withLoading = (fn: (...args: any[]) => any) => async (...args: any[]) => {
     setActionLoading(true);
-    fn(...args);
-    setTimeout(() => setActionLoading(false), 300);
+    await fn(...args);
+    setActionLoading(false);
   };
 
   return (
