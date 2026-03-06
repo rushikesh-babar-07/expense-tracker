@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Expense {
   id: string;
@@ -19,116 +20,230 @@ export interface SavingsEntry {
 }
 
 export interface MonthRecord {
-  month: string; // "2026-03"
+  month: string;
   deposit: number;
   expenses: Expense[];
   savings: number;
 }
 
 const CATEGORIES = ["Food", "Travel", "Shops", "Health", "Others"] as const;
-
-const DEFAULT_EXPENSES: Omit<Expense, "id" | "date">[] = [
-  { name: "Mess Fee", category: "Food", amount: 3500, isDefault: true },
-  { name: "Room Rent", category: "Others", amount: 5000, isDefault: true },
-];
-
+const USER_ID = "default";
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const today = () => new Date().toISOString().split("T")[0];
 
-function generateDefaultExpenses(): Expense[] {
-  return DEFAULT_EXPENSES.map((e, i) => ({
-    ...e,
-    id: `default-${i}-${Date.now()}`,
-    date: today(),
-  }));
-}
-
-const SAMPLE_EXPENSES: Expense[] = [
-  { id: "1", name: "Mess Fee", category: "Food", amount: 3500, date: "2026-03-01", isDefault: true },
-  { id: "2", name: "Room Rent", category: "Others", amount: 5000, date: "2026-03-01", isDefault: true },
-  { id: "3", name: "Groceries", category: "Food", amount: 450, date: "2026-03-04" },
-  { id: "4", name: "Bus Ticket", category: "Travel", amount: 120, date: "2026-03-03" },
-  { id: "5", name: "Notebooks", category: "Shops", amount: 199, date: "2026-03-02" },
-];
-
 export function useExpenseStore() {
-  const [expenses, setExpenses] = useState<Expense[]>(SAMPLE_EXPENSES);
-  const [deposit, setDeposit] = useState(15000);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [deposit, setDeposit] = useState(0);
   const [totalSavings, setTotalSavings] = useState(0);
   const [savingsHistory, setSavingsHistory] = useState<SavingsEntry[]>([]);
-  const [monthlyHistory, setMonthlyHistory] = useState<MonthRecord[]>([
-    {
-      month: "2026-02",
-      deposit: 12000,
-      expenses: [
-        { id: "h1", name: "Mess Fee", category: "Food", amount: 3500, date: "2026-02-01", isDefault: true },
-        { id: "h2", name: "Room Rent", category: "Others", amount: 5000, date: "2026-02-01", isDefault: true },
-        { id: "h3", name: "Movie Tickets", category: "Others", amount: 300, date: "2026-02-14" },
-        { id: "h4", name: "Medicine", category: "Health", amount: 250, date: "2026-02-10" },
-      ],
-      savings: 2950,
-    },
-    {
-      month: "2026-01",
-      deposit: 10000,
-      expenses: [
-        { id: "h5", name: "Mess Fee", category: "Food", amount: 3500, date: "2026-01-01", isDefault: true },
-        { id: "h6", name: "Room Rent", category: "Others", amount: 5000, date: "2026-01-01", isDefault: true },
-        { id: "h7", name: "Stationery", category: "Shops", amount: 400, date: "2026-01-15" },
-      ],
-      savings: 1100,
-    },
-  ]);
-  const [defaultExpenses, setDefaultExpenses] = useState(DEFAULT_EXPENSES);
+  const [monthlyHistory, setMonthlyHistory] = useState<MonthRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch all data on mount
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    await Promise.all([fetchExpenses(), fetchDeposit(), fetchSavings()]);
+    setLoading(false);
+  };
+
+  const fetchExpenses = async () => {
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("*")
+      .eq("user_id", USER_ID)
+      .eq("month", currentMonth())
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setExpenses(
+        data.map((e: any) => ({
+          id: e.id,
+          name: e.title,
+          category: e.category,
+          amount: Number(e.amount),
+          date: e.date,
+          isDefault: e.is_default || false,
+        }))
+      );
+    }
+  };
+
+  const fetchDeposit = async () => {
+    const { data, error } = await supabase
+      .from("deposits")
+      .select("*")
+      .eq("user_id", USER_ID)
+      .eq("month", currentMonth())
+      .single();
+    if (!error && data) {
+      setDeposit(Number(data.amount));
+    }
+  };
+
+  const fetchSavings = async () => {
+    const { data, error } = await supabase
+      .from("savings")
+      .select("*")
+      .eq("user_id", USER_ID)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      let total = 0;
+      const history: SavingsEntry[] = data.map((s: any) => {
+        const t = s.type as "add" | "deduct";
+        total += t === "add" ? Number(s.amount) : -Number(s.amount);
+        return {
+          id: s.id,
+          type: t,
+          amount: Number(s.amount),
+          note: s.reason || "",
+          date: s.created_at?.split("T")[0] || today(),
+        };
+      });
+      setTotalSavings(Math.max(0, total));
+      setSavingsHistory(history);
+    }
+  };
 
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const remaining = deposit - totalSpent;
   const savingsEstimate = remaining > 0 ? remaining * 0.2 : 0;
 
-  const addExpense = useCallback((expense: Omit<Expense, "id">) => {
-    setExpenses((p) => [{ ...expense, id: Date.now().toString() }, ...p]);
-    toast.success("Expense added successfully");
+  const addExpense = useCallback(async (expense: Omit<Expense, "id">) => {
+    const { error } = await supabase.from("expenses").insert({
+      user_id: USER_ID,
+      title: expense.name,
+      category: expense.category,
+      amount: expense.amount,
+      date: expense.date,
+      month: currentMonth(),
+      is_default: expense.isDefault || false,
+    });
+    if (!error) {
+      toast.success("Expense added successfully");
+      await fetchExpenses();
+    } else {
+      toast.error("Failed to add expense");
+    }
   }, []);
 
-  const editExpense = useCallback((id: string, data: Omit<Expense, "id">) => {
-    setExpenses((p) => p.map((e) => (e.id === id ? { ...data, id } : e)));
-    toast.success("Expense updated");
+  const editExpense = useCallback(async (id: string, data: Omit<Expense, "id">) => {
+    const { error } = await supabase
+      .from("expenses")
+      .update({
+        title: data.name,
+        category: data.category,
+        amount: data.amount,
+        date: data.date,
+      })
+      .eq("id", id);
+    if (!error) {
+      toast.success("Expense updated");
+      await fetchExpenses();
+    } else {
+      toast.error("Failed to update expense");
+    }
   }, []);
 
-  const deleteExpense = useCallback((id: string) => {
-    setExpenses((p) => p.filter((e) => e.id !== id));
-    toast.success("Expense deleted");
+  const deleteExpense = useCallback(async (id: string) => {
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
+    if (!error) {
+      toast.success("Expense deleted");
+      await fetchExpenses();
+    } else {
+      toast.error("Failed to delete expense");
+    }
   }, []);
 
-  const updateDeposit = useCallback((amount: number) => {
-    setDeposit(amount);
-    toast.success("Deposit updated");
+  const updateDeposit = useCallback(async (amount: number) => {
+    const { data: existing } = await supabase
+      .from("deposits")
+      .select("id")
+      .eq("user_id", USER_ID)
+      .eq("month", currentMonth())
+      .single();
+
+    let error;
+    if (existing) {
+      ({ error } = await supabase
+        .from("deposits")
+        .update({ amount })
+        .eq("id", existing.id));
+    } else {
+      ({ error } = await supabase
+        .from("deposits")
+        .insert({ user_id: USER_ID, amount, month: currentMonth() }));
+    }
+    if (!error) {
+      setDeposit(amount);
+      toast.success("Deposit updated");
+    } else {
+      toast.error("Failed to update deposit");
+    }
   }, []);
 
-  const addToDeposit = useCallback((extra: number) => {
-    setDeposit((p) => p + extra);
-    toast.success(`₹${extra} added to deposit`);
+  const addToDeposit = useCallback(async (extra: number) => {
+    const { data: existing } = await supabase
+      .from("deposits")
+      .select("id, amount")
+      .eq("user_id", USER_ID)
+      .eq("month", currentMonth())
+      .single();
+
+    const newAmount = (existing ? Number(existing.amount) : 0) + extra;
+    let error;
+    if (existing) {
+      ({ error } = await supabase
+        .from("deposits")
+        .update({ amount: newAmount })
+        .eq("id", existing.id));
+    } else {
+      ({ error } = await supabase
+        .from("deposits")
+        .insert({ user_id: USER_ID, amount: newAmount, month: currentMonth() }));
+    }
+    if (!error) {
+      setDeposit(newAmount);
+      toast.success(`₹${extra} added to deposit`);
+    } else {
+      toast.error("Failed to add to deposit");
+    }
   }, []);
 
-  const addSavings = useCallback((amount: number, note: string) => {
-    setTotalSavings((p) => p + amount);
-    setSavingsHistory((p) => [
-      { id: Date.now().toString(), type: "add", amount, note, date: today() },
-      ...p,
-    ]);
-    toast.success(`₹${amount} added to savings`);
+  const addSavings = useCallback(async (amount: number, note: string) => {
+    const { error } = await supabase.from("savings").insert({
+      user_id: USER_ID,
+      type: "add",
+      amount,
+      reason: note,
+    });
+    if (!error) {
+      toast.success(`₹${amount} added to savings`);
+      await fetchSavings();
+    } else {
+      toast.error("Failed to add savings");
+    }
   }, []);
 
-  const deductSavings = useCallback((amount: number, note: string) => {
-    setTotalSavings((p) => Math.max(0, p - amount));
-    setSavingsHistory((p) => [
-      { id: Date.now().toString(), type: "deduct", amount, note, date: today() },
-      ...p,
-    ]);
-    toast.success(`₹${amount} deducted from savings`);
+  const deductSavings = useCallback(async (amount: number, note: string) => {
+    const { error } = await supabase.from("savings").insert({
+      user_id: USER_ID,
+      type: "deduct",
+      amount,
+      reason: note,
+    });
+    if (!error) {
+      toast.success(`₹${amount} deducted from savings`);
+      await fetchSavings();
+    } else {
+      toast.error("Failed to deduct savings");
+    }
   }, []);
 
-  const resetAll = useCallback(() => {
+  const resetAll = useCallback(async () => {
+    // Save current month to history (local only for now)
     const record: MonthRecord = {
       month: currentMonth(),
       deposit,
@@ -136,10 +251,19 @@ export function useExpenseStore() {
       savings: savingsEstimate,
     };
     setMonthlyHistory((p) => [record, ...p]);
-    setExpenses(generateDefaultExpenses());
-    setDeposit(0);
-    setTotalSavings(0);
-    setSavingsHistory([]);
+
+    // Delete current month data from DB
+    await supabase.from("expenses").delete().eq("user_id", USER_ID).eq("month", currentMonth());
+    await supabase.from("deposits").delete().eq("user_id", USER_ID).eq("month", currentMonth());
+    await supabase.from("savings").delete().eq("user_id", USER_ID);
+
+    // Insert default expenses
+    await supabase.from("expenses").insert([
+      { user_id: USER_ID, title: "Mess Fee", category: "Food", amount: 3500, date: today(), month: currentMonth(), is_default: true },
+      { user_id: USER_ID, title: "Room Rent", category: "Others", amount: 5000, date: today(), month: currentMonth(), is_default: true },
+    ]);
+
+    await fetchAll();
     toast.success("All data has been reset");
   }, [deposit, expenses, savingsEstimate]);
 
@@ -152,7 +276,10 @@ export function useExpenseStore() {
     totalSavings,
     savingsHistory,
     monthlyHistory,
-    defaultExpenses,
+    defaultExpenses: [
+      { name: "Mess Fee", category: "Food", amount: 3500 },
+      { name: "Room Rent", category: "Others", amount: 5000 },
+    ],
     addExpense,
     editExpense,
     deleteExpense,
@@ -162,5 +289,6 @@ export function useExpenseStore() {
     deductSavings,
     resetAll,
     categories: CATEGORIES,
+    loading,
   };
 }
