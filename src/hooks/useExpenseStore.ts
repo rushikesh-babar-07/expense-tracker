@@ -96,7 +96,7 @@ export function useExpenseStore() {
       .select("*")
       .eq("user_id", userId)
       .eq("month", currentMonth())
-      .single();
+      .maybeSingle();
     if (!error && data) setDeposit(Number(data.amount));
     else setDeposit(0);
   };
