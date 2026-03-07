@@ -3,6 +3,7 @@ import Dashboard from "@/components/Dashboard";
 import SavingsPage from "@/components/SavingsPage";
 import MonthlyHistoryPage from "@/components/MonthlyHistoryPage";
 import SettingsPage from "@/components/SettingsPage";
+import RecurringExpensesPage from "@/components/RecurringExpensesPage";
 
 interface IndexProps {
   store: any;
@@ -13,6 +14,15 @@ const Index = ({ store }: IndexProps) => {
 
   const renderPage = () => {
     switch (location.pathname) {
+      case "/recurring":
+        return (
+          <RecurringExpensesPage
+            recurringExpenses={store.recurringExpenses}
+            onAdd={store.addRecurring}
+            onEdit={store.editRecurring}
+            onDelete={store.deleteRecurring}
+          />
+        );
       case "/history":
         return <MonthlyHistoryPage history={store.monthlyHistory} />;
       case "/savings":
@@ -47,9 +57,7 @@ const Index = ({ store }: IndexProps) => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-6xl">
-        {renderPage()}
-      </div>
+      <div className="mx-auto max-w-6xl">{renderPage()}</div>
     </div>
   );
 };
