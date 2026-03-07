@@ -207,7 +207,7 @@ export function useExpenseStore() {
   const updateDeposit = useCallback(async (amount: number) => {
     if (!userId) return;
     const { data: existing } = await supabase
-      .from("deposits").select("id").eq("user_id", userId).eq("month", currentMonth()).single();
+      .from("deposits").select("id").eq("user_id", userId).eq("month", currentMonth()).maybeSingle();
     let error;
     if (existing) {
       ({ error } = await supabase.from("deposits").update({ amount }).eq("id", existing.id));
