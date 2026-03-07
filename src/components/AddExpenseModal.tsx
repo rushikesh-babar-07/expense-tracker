@@ -22,6 +22,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [isRecurring, setIsRecurring] = useState(false);
 
   useEffect(() => {
     if (editingExpense) {
@@ -29,11 +30,13 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       setAmount(editingExpense.amount.toString());
       setCategory(editingExpense.category);
       setDate(editingExpense.date);
+      setIsRecurring(editingExpense.isRecurring || false);
     } else {
       setName("");
       setAmount("");
       setCategory(CATEGORIES[0]);
       setDate(new Date().toISOString().split("T")[0]);
+      setIsRecurring(false);
     }
   }, [editingExpense, open]);
 
@@ -45,6 +48,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       amount: parseFloat(amount),
       category,
       date,
+      isRecurring,
     };
     if (editingExpense && onEdit) {
       onEdit(editingExpense.id, data);
@@ -76,15 +80,24 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
           <div>
             <label className="mb-1.5 block text-sm text-muted-foreground">Category</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
           <div>
             <label className="mb-1.5 block text-sm text-muted-foreground">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={inputClass} />
           </div>
+          {!editingExpense && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-input text-primary focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">Add as Recurring Expense</span>
+            </label>
+          )}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent">
               Cancel

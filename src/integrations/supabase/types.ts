@@ -27,7 +27,7 @@ export type Database = {
           created_at?: string
           id?: string
           month: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           amount?: number
@@ -46,6 +46,7 @@ export type Database = {
           date: string
           id: string
           is_default: boolean | null
+          is_recurring: boolean | null
           month: string
           title: string
           user_id: string
@@ -57,9 +58,10 @@ export type Database = {
           date: string
           id?: string
           is_default?: boolean | null
+          is_recurring?: boolean | null
           month: string
           title: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           amount?: number
@@ -68,7 +70,38 @@ export type Database = {
           date?: string
           id?: string
           is_default?: boolean | null
+          is_recurring?: boolean | null
           month?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          frequency: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
           title?: string
           user_id?: string
         }
@@ -89,7 +122,7 @@ export type Database = {
           id?: string
           reason?: string | null
           type?: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           amount?: number
