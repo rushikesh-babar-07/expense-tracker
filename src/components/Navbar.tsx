@@ -1,9 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, PiggyBank, Settings, FileDown } from "lucide-react";
+import { LayoutDashboard, CalendarDays, PiggyBank, Settings, FileDown, LogOut, RefreshCw } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/history", label: "Monthly History", icon: CalendarDays },
+  { to: "/recurring", label: "Recurring", icon: RefreshCw },
+  { to: "/history", label: "History", icon: CalendarDays },
   { to: "/savings", label: "Savings", icon: PiggyBank },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
@@ -14,6 +16,7 @@ interface NavbarProps {
 
 const Navbar = ({ onDownloadReport }: NavbarProps) => {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <nav className="border-b border-border bg-card">
@@ -41,9 +44,16 @@ const Navbar = ({ onDownloadReport }: NavbarProps) => {
               className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent"
             >
               <FileDown className="h-4 w-4" />
-              <span className="hidden sm:inline">Download Report</span>
+              <span className="hidden sm:inline">Report</span>
             </button>
           )}
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </nav>

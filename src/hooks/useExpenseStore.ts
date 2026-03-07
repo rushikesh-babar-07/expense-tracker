@@ -1,11 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Expense {
   id: string;
@@ -14,6 +10,7 @@ export interface Expense {
   amount: number;
   date: string;
   isDefault?: boolean;
+  isRecurring?: boolean;
 }
 
 export interface SavingsEntry {
@@ -31,35 +28,47 @@ export interface MonthRecord {
   savings: number;
 }
 
+export interface RecurringExpense {
+  id: string;
+  title: string;
+  category: string;
+  amount: number;
+  frequency: string;
+}
+
 const CATEGORIES = ["Food", "Travel", "Shops", "Health", "Others"] as const;
-const USER_ID = "default";
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const today = () => new Date().toISOString().split("T")[0];
 
 export function useExpenseStore() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [deposit, setDeposit] = useState(0);
   const [totalSavings, setTotalSavings] = useState(0);
   const [savingsHistory, setSavingsHistory] = useState<SavingsEntry[]>([]);
   const [monthlyHistory, setMonthlyHistory] = useState<MonthRecord[]>([]);
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all data on mount
   useEffect(() => {
-    fetchAll();
-  }, []);
+    if (userId) fetchAll();
+    else setLoading(false);
+  }, [userId]);
 
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchExpenses(), fetchDeposit(), fetchSavings()]);
+    await Promise.all([fetchExpenses(), fetchDeposit(), fetchSavings(), fetchRecurring()]);
     setLoading(false);
   };
 
   const fetchExpenses = async () => {
+    if (!userId) return;
     const { data, error } = await supabase
       .from("expenses")
       .select("*")
-      .eq("user_id", USER_ID)
+      .eq("user_id", userId)
       .eq("month", currentMonth())
       .order("created_at", { ascending: false });
     if (!error && data) {
@@ -71,28 +80,30 @@ export function useExpenseStore() {
           amount: Number(e.amount),
           date: e.date,
           isDefault: e.is_default || false,
+          isRecurring: e.is_recurring || false,
         }))
       );
     }
   };
 
   const fetchDeposit = async () => {
+    if (!userId) return;
     const { data, error } = await supabase
       .from("deposits")
       .select("*")
-      .eq("user_id", USER_ID)
+      .eq("user_id", userId)
       .eq("month", currentMonth())
       .single();
-    if (!error && data) {
-      setDeposit(Number(data.amount));
-    }
+    if (!error && data) setDeposit(Number(data.amount));
+    else setDeposit(0);
   };
 
   const fetchSavings = async () => {
+    if (!userId) return;
     const { data, error } = await supabase
       .from("savings")
       .select("*")
-      .eq("user_id", USER_ID)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (!error && data) {
       let total = 0;
@@ -112,29 +123,63 @@ export function useExpenseStore() {
     }
   };
 
+  const fetchRecurring = async () => {
+    if (!userId) return;
+    const { data, error } = await supabase
+      .from("recurring_expenses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setRecurringExpenses(
+        data.map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          amount: Number(r.amount),
+          frequency: r.frequency,
+        }))
+      );
+    }
+  };
+
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const remaining = deposit - totalSpent;
   const savingsEstimate = remaining > 0 ? remaining * 0.2 : 0;
 
   const addExpense = useCallback(async (expense: Omit<Expense, "id">) => {
+    if (!userId) return;
     const { error } = await supabase.from("expenses").insert({
-      user_id: USER_ID,
+      user_id: userId,
       title: expense.name,
       category: expense.category,
       amount: expense.amount,
       date: expense.date,
       month: currentMonth(),
       is_default: expense.isDefault || false,
+      is_recurring: expense.isRecurring || false,
     });
     if (!error) {
+      // If marked as recurring, also add to recurring_expenses
+      if (expense.isRecurring) {
+        await supabase.from("recurring_expenses").insert({
+          user_id: userId,
+          title: expense.name,
+          category: expense.category,
+          amount: expense.amount,
+          frequency: "monthly",
+        });
+        await fetchRecurring();
+      }
       toast.success("Expense added successfully");
       await fetchExpenses();
     } else {
       toast.error("Failed to add expense");
     }
-  }, []);
+  }, [userId]);
 
   const editExpense = useCallback(async (id: string, data: Omit<Expense, "id">) => {
+    if (!userId) return;
     const { error } = await supabase
       .from("expenses")
       .update({
@@ -150,9 +195,10 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to update expense");
     }
-  }, []);
+  }, [userId]);
 
   const deleteExpense = useCallback(async (id: string) => {
+    if (!userId) return;
     const { error } = await supabase.from("expenses").delete().eq("id", id);
     if (!error) {
       toast.success("Expense deleted");
@@ -160,26 +206,22 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to delete expense");
     }
-  }, []);
+  }, [userId]);
 
   const updateDeposit = useCallback(async (amount: number) => {
+    if (!userId) return;
     const { data: existing } = await supabase
       .from("deposits")
       .select("id")
-      .eq("user_id", USER_ID)
+      .eq("user_id", userId)
       .eq("month", currentMonth())
       .single();
 
     let error;
     if (existing) {
-      ({ error } = await supabase
-        .from("deposits")
-        .update({ amount })
-        .eq("id", existing.id));
+      ({ error } = await supabase.from("deposits").update({ amount }).eq("id", existing.id));
     } else {
-      ({ error } = await supabase
-        .from("deposits")
-        .insert({ user_id: USER_ID, amount, month: currentMonth() }));
+      ({ error } = await supabase.from("deposits").insert({ user_id: userId, amount, month: currentMonth() }));
     }
     if (!error) {
       setDeposit(amount);
@@ -187,27 +229,23 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to update deposit");
     }
-  }, []);
+  }, [userId]);
 
   const addToDeposit = useCallback(async (extra: number) => {
+    if (!userId) return;
     const { data: existing } = await supabase
       .from("deposits")
       .select("id, amount")
-      .eq("user_id", USER_ID)
+      .eq("user_id", userId)
       .eq("month", currentMonth())
       .single();
 
     const newAmount = (existing ? Number(existing.amount) : 0) + extra;
     let error;
     if (existing) {
-      ({ error } = await supabase
-        .from("deposits")
-        .update({ amount: newAmount })
-        .eq("id", existing.id));
+      ({ error } = await supabase.from("deposits").update({ amount: newAmount }).eq("id", existing.id));
     } else {
-      ({ error } = await supabase
-        .from("deposits")
-        .insert({ user_id: USER_ID, amount: newAmount, month: currentMonth() }));
+      ({ error } = await supabase.from("deposits").insert({ user_id: userId, amount: newAmount, month: currentMonth() }));
     }
     if (!error) {
       setDeposit(newAmount);
@@ -215,11 +253,12 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to add to deposit");
     }
-  }, []);
+  }, [userId]);
 
   const addSavings = useCallback(async (amount: number, note: string) => {
+    if (!userId) return;
     const { error } = await supabase.from("savings").insert({
-      user_id: USER_ID,
+      user_id: userId,
       type: "add",
       amount,
       reason: note,
@@ -230,11 +269,12 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to add savings");
     }
-  }, []);
+  }, [userId]);
 
   const deductSavings = useCallback(async (amount: number, note: string) => {
+    if (!userId) return;
     const { error } = await supabase.from("savings").insert({
-      user_id: USER_ID,
+      user_id: userId,
       type: "deduct",
       amount,
       reason: note,
@@ -245,10 +285,55 @@ export function useExpenseStore() {
     } else {
       toast.error("Failed to deduct savings");
     }
-  }, []);
+  }, [userId]);
+
+  // Recurring expenses CRUD
+  const addRecurring = useCallback(async (data: Omit<RecurringExpense, "id">) => {
+    if (!userId) return;
+    const { error } = await supabase.from("recurring_expenses").insert({
+      user_id: userId,
+      title: data.title,
+      category: data.category,
+      amount: data.amount,
+      frequency: data.frequency,
+    });
+    if (!error) {
+      toast.success("Recurring expense added");
+      await fetchRecurring();
+    } else {
+      toast.error("Failed to add recurring expense");
+    }
+  }, [userId]);
+
+  const editRecurring = useCallback(async (id: string, data: Omit<RecurringExpense, "id">) => {
+    if (!userId) return;
+    const { error } = await supabase.from("recurring_expenses").update({
+      title: data.title,
+      category: data.category,
+      amount: data.amount,
+      frequency: data.frequency,
+    }).eq("id", id);
+    if (!error) {
+      toast.success("Recurring expense updated");
+      await fetchRecurring();
+    } else {
+      toast.error("Failed to update recurring expense");
+    }
+  }, [userId]);
+
+  const deleteRecurring = useCallback(async (id: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from("recurring_expenses").delete().eq("id", id);
+    if (!error) {
+      toast.success("Recurring expense deleted");
+      await fetchRecurring();
+    } else {
+      toast.error("Failed to delete recurring expense");
+    }
+  }, [userId]);
 
   const resetAll = useCallback(async () => {
-    // Save current month to history (local only for now)
+    if (!userId) return;
     const record: MonthRecord = {
       month: currentMonth(),
       deposit,
@@ -257,20 +342,13 @@ export function useExpenseStore() {
     };
     setMonthlyHistory((p) => [record, ...p]);
 
-    // Delete current month data from DB
-    await supabase.from("expenses").delete().eq("user_id", USER_ID).eq("month", currentMonth());
-    await supabase.from("deposits").delete().eq("user_id", USER_ID).eq("month", currentMonth());
-    await supabase.from("savings").delete().eq("user_id", USER_ID);
-
-    // Insert default expenses
-    await supabase.from("expenses").insert([
-      { user_id: USER_ID, title: "Mess Fee", category: "Food", amount: 3500, date: today(), month: currentMonth(), is_default: true },
-      { user_id: USER_ID, title: "Room Rent", category: "Others", amount: 5000, date: today(), month: currentMonth(), is_default: true },
-    ]);
+    await supabase.from("expenses").delete().eq("user_id", userId).eq("month", currentMonth());
+    await supabase.from("deposits").delete().eq("user_id", userId).eq("month", currentMonth());
+    await supabase.from("savings").delete().eq("user_id", userId);
 
     await fetchAll();
     toast.success("All data has been reset");
-  }, [deposit, expenses, savingsEstimate]);
+  }, [userId, deposit, expenses, savingsEstimate]);
 
   return {
     expenses,
@@ -281,6 +359,7 @@ export function useExpenseStore() {
     totalSavings,
     savingsHistory,
     monthlyHistory,
+    recurringExpenses,
     defaultExpenses: [
       { name: "Mess Fee", category: "Food", amount: 3500 },
       { name: "Room Rent", category: "Others", amount: 5000 },
@@ -292,6 +371,9 @@ export function useExpenseStore() {
     addToDeposit,
     addSavings,
     deductSavings,
+    addRecurring,
+    editRecurring,
+    deleteRecurring,
     resetAll,
     categories: CATEGORIES,
     loading,
