@@ -96,7 +96,7 @@ export function useExpenseStore() {
       .select("*")
       .eq("user_id", userId)
       .eq("month", currentMonth())
-      .single();
+      .maybeSingle();
     if (!error && data) setDeposit(Number(data.amount));
     else setDeposit(0);
   };
@@ -207,7 +207,7 @@ export function useExpenseStore() {
   const updateDeposit = useCallback(async (amount: number) => {
     if (!userId) return;
     const { data: existing } = await supabase
-      .from("deposits").select("id").eq("user_id", userId).eq("month", currentMonth()).single();
+      .from("deposits").select("id").eq("user_id", userId).eq("month", currentMonth()).maybeSingle();
     let error;
     if (existing) {
       ({ error } = await supabase.from("deposits").update({ amount }).eq("id", existing.id));
@@ -221,7 +221,7 @@ export function useExpenseStore() {
   const addToDeposit = useCallback(async (extra: number) => {
     if (!userId) return;
     const { data: existing } = await supabase
-      .from("deposits").select("id, amount").eq("user_id", userId).eq("month", currentMonth()).single();
+      .from("deposits").select("id, amount").eq("user_id", userId).eq("month", currentMonth()).maybeSingle();
     const newAmount = (existing ? Number(existing.amount) : 0) + extra;
     let error;
     if (existing) {
