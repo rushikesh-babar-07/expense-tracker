@@ -35,7 +35,6 @@ const Index = ({ store }: IndexProps) => {
             onDeduct={store.deductSavings}
             onReset={store.resetSavings}
           />
-          />
         );
       case "/settings":
         return <SettingsPage onReset={store.resetAll} />;
