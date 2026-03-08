@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PiggyBank, Plus, Minus } from "lucide-react";
+import { PiggyBank, Plus, Minus, RotateCcw } from "lucide-react";
 import type { SavingsEntry } from "@/hooks/useExpenseStore";
 import {
   Dialog,
