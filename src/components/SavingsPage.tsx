@@ -138,6 +138,18 @@ const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct,
           </form>
         </DialogContent>
       </Dialog>
+      <Dialog open={confirmResetOpen} onOpenChange={(v) => !v && setConfirmResetOpen(false)}>
+        <DialogContent className="border-border bg-card sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground">Reset Savings</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Are you sure you want to reset your savings to ₹0?</p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setConfirmResetOpen(false)} className="flex-1 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent">Cancel</button>
+            <button onClick={() => { onReset(); setConfirmResetOpen(false); }} className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:opacity-90">Yes, Reset</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
