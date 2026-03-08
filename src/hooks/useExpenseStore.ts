@@ -245,6 +245,16 @@ export function useExpenseStore() {
     else toast.error("Failed to deduct savings");
   }, [userId]);
 
+  const resetSavings = useCallback(async () => {
+    if (!userId) return;
+    const { error } = await supabase.from("savings").delete().eq("user_id", userId);
+    if (!error) {
+      setTotalSavings(0);
+      setSavingsHistory([]);
+      toast.success("Savings reset to ₹0");
+    } else toast.error("Failed to reset savings");
+  }, [userId]);
+
   const addRecurring = useCallback(async (data: Omit<RecurringExpense, "id">) => {
     if (!userId) return;
     const { error } = await recurringTable().insert({
