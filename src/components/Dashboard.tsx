@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus, Loader2 } from "lucide-react";
+import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus, Loader2, CalendarPlus } from "lucide-react";
 import SummaryCard from "@/components/SummaryCard";
 import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import DepositModal from "@/components/DepositModal";
+import StartNewMonthModal from "@/components/StartNewMonthModal";
 import type { Expense } from "@/hooks/useExpenseStore";
 
 interface DashboardProps {
@@ -11,21 +12,22 @@ interface DashboardProps {
   deposit: number;
   totalSpent: number;
   remaining: number;
-  savingsEstimate: number;
   totalSavings: number;
   addExpense: (e: Omit<Expense, "id">) => void;
   editExpense: (id: string, e: Omit<Expense, "id">) => void;
   deleteExpense: (id: string) => void;
   updateDeposit: (amount: number) => void;
   addToDeposit: (amount: number) => void;
+  startNewMonth: (newBudget: number, transferToSavings: boolean) => Promise<{ newBudget: number; transferred: number } | undefined>;
 }
 
 const Dashboard = ({
-  expenses, deposit, totalSpent, remaining, savingsEstimate, totalSavings,
-  addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit,
+  expenses, deposit, totalSpent, remaining, totalSavings,
+  addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit, startNewMonth,
 }: DashboardProps) => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isNewMonthModalOpen, setIsNewMonthModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -41,8 +43,9 @@ const Dashboard = ({
 
   const withLoading = (fn: (...args: any[]) => any) => async (...args: any[]) => {
     setActionLoading(true);
-    await fn(...args);
+    const result = await fn(...args);
     setActionLoading(false);
+    return result;
   };
 
   return (
@@ -51,22 +54,31 @@ const Dashboard = ({
         <SummaryCard title="Monthly Deposit" value={deposit} icon={<Wallet className="h-5 w-5 text-info" />} clickable onClick={() => setIsDepositModalOpen(true)} />
         <SummaryCard title="Total Spent" value={totalSpent} icon={<TrendingDown className="h-5 w-5 text-destructive" />} />
         <SummaryCard title="Remaining Balance" value={remaining} icon={<DollarSign className="h-5 w-5 text-success" />} />
-        <SummaryCard title="Savings (est.)" value={savingsEstimate} icon={<PiggyBank className="h-5 w-5 text-warning" />} />
+        <SummaryCard title="Total Savings" value={totalSavings} icon={<PiggyBank className="h-5 w-5 text-warning" />} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-card-foreground">Recent Expenses</h2>
-            {actionLoading && <Loader2 className="h-4 w-4 animate-spin-slow text-primary" />}
+            {actionLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
           </div>
-          <button
-            onClick={() => { setEditingExpense(null); setIsExpenseModalOpen(true); }}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all duration-200 hover:opacity-90 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-px active:translate-y-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-          >
-            <Plus className="h-4 w-4" />
-            Add Expense
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsNewMonthModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground hover:-translate-y-px"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Start New Month
+            </button>
+            <button
+              onClick={() => { setEditingExpense(null); setIsExpenseModalOpen(true); }}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all duration-200 hover:opacity-90 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-px active:translate-y-0 active:shadow-none"
+            >
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </button>
+          </div>
         </div>
         <ExpenseTable expenses={expenses} onDelete={withLoading(deleteExpense)} onEdit={handleEdit} />
       </div>
@@ -84,6 +96,13 @@ const Dashboard = ({
         currentDeposit={deposit}
         onUpdate={withLoading(updateDeposit)}
         onAddExtra={withLoading(addToDeposit)}
+      />
+      <StartNewMonthModal
+        open={isNewMonthModalOpen}
+        onClose={() => setIsNewMonthModalOpen(false)}
+        remaining={remaining}
+        totalSavings={totalSavings}
+        onStart={withLoading(startNewMonth)}
       />
     </div>
   );

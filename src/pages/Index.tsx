@@ -30,6 +30,7 @@ const Index = ({ store }: IndexProps) => {
           <SavingsPage
             totalSavings={store.totalSavings}
             savingsHistory={store.savingsHistory}
+            remaining={store.remaining}
             onAdd={store.addSavings}
             onDeduct={store.deductSavings}
           />
@@ -43,13 +44,13 @@ const Index = ({ store }: IndexProps) => {
             deposit={store.deposit}
             totalSpent={store.totalSpent}
             remaining={store.remaining}
-            savingsEstimate={store.savingsEstimate}
             totalSavings={store.totalSavings}
             addExpense={store.addExpense}
             editExpense={store.editExpense}
             deleteExpense={store.deleteExpense}
             updateDeposit={store.updateDeposit}
             addToDeposit={store.addToDeposit}
+            startNewMonth={store.startNewMonth}
           />
         );
     }
