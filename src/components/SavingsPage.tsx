@@ -73,6 +73,9 @@ const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct,
           <button onClick={() => openModal("deduct")} disabled={totalSavings <= 0} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
             <Minus className="h-4 w-4" /> Deduct Savings
           </button>
+          <button onClick={() => setConfirmResetOpen(true)} disabled={totalSavings <= 0} className="inline-flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed">
+            <RotateCcw className="h-4 w-4" /> Reset Savings
+          </button>
         </div>
       </div>
 
