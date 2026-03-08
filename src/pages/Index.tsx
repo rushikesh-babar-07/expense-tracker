@@ -33,6 +33,7 @@ const Index = ({ store }: IndexProps) => {
             remaining={store.remaining}
             onAdd={store.addSavings}
             onDeduct={store.deductSavings}
+            onReset={store.resetSavings}
           />
         );
       case "/settings":

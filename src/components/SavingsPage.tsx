@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PiggyBank, Plus, Minus } from "lucide-react";
+import { PiggyBank, Plus, Minus, RotateCcw } from "lucide-react";
 import type { SavingsEntry } from "@/hooks/useExpenseStore";
 import {
   Dialog,
@@ -14,10 +14,12 @@ interface SavingsPageProps {
   remaining: number;
   onAdd: (amount: number, note: string) => void;
   onDeduct: (amount: number, note: string) => void;
+  onReset: () => void;
 }
 
-const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct }: SavingsPageProps) => {
+const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct, onReset }: SavingsPageProps) => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [mode, setMode] = useState<"add" | "deduct">("add");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -70,6 +72,9 @@ const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct 
           </button>
           <button onClick={() => openModal("deduct")} disabled={totalSavings <= 0} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
             <Minus className="h-4 w-4" /> Deduct Savings
+          </button>
+          <button onClick={() => setConfirmResetOpen(true)} disabled={totalSavings <= 0} className="inline-flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed">
+            <RotateCcw className="h-4 w-4" /> Reset Savings
           </button>
         </div>
       </div>
@@ -131,6 +136,18 @@ const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct 
               </button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmResetOpen} onOpenChange={(v) => !v && setConfirmResetOpen(false)}>
+        <DialogContent className="border-border bg-card sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground">Reset Savings</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Are you sure you want to reset your savings to ₹0?</p>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setConfirmResetOpen(false)} className="flex-1 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent">Cancel</button>
+            <button onClick={() => { onReset(); setConfirmResetOpen(false); }} className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:opacity-90">Yes, Reset</button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
