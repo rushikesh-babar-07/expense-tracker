@@ -11,20 +11,23 @@ import {
 interface SavingsPageProps {
   totalSavings: number;
   savingsHistory: SavingsEntry[];
+  remaining: number;
   onAdd: (amount: number, note: string) => void;
   onDeduct: (amount: number, note: string) => void;
 }
 
-const SavingsPage = ({ totalSavings, savingsHistory, onAdd, onDeduct }: SavingsPageProps) => {
+const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct }: SavingsPageProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"add" | "deduct">("add");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
 
   const openModal = (m: "add" | "deduct") => {
     setMode(m);
     setAmount("");
     setNote("");
+    setError("");
     setModalOpen(true);
   };
 
@@ -32,6 +35,17 @@ const SavingsPage = ({ totalSavings, savingsHistory, onAdd, onDeduct }: SavingsP
     e.preventDefault();
     const val = parseFloat(amount);
     if (!val || val <= 0) return;
+
+    if (mode === "add" && val > remaining) {
+      setError(`Cannot add more than your remaining balance (₹${remaining.toFixed(2)})`);
+      return;
+    }
+    if (mode === "deduct" && val > totalSavings) {
+      setError(`Cannot deduct more than total savings (₹${totalSavings.toFixed(2)})`);
+      return;
+    }
+
+    setError("");
     if (mode === "add") onAdd(val, note || "Manual savings");
     else onDeduct(val, note || "Savings used");
     setModalOpen(false);
@@ -46,12 +60,15 @@ const SavingsPage = ({ totalSavings, savingsHistory, onAdd, onDeduct }: SavingsP
           <PiggyBank className="h-6 w-6 text-warning" />
           <h2 className="text-xl font-bold text-card-foreground">Total Savings</h2>
         </div>
-        <p className="text-3xl font-bold text-foreground mb-4">₹{totalSavings.toFixed(2)}</p>
+        <p className="text-3xl font-bold text-foreground mb-2">₹{totalSavings.toFixed(2)}</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Available to save from remaining balance: <span className="font-semibold text-success">₹{Math.max(0, remaining).toFixed(2)}</span>
+        </p>
         <div className="flex gap-3">
-          <button onClick={() => openModal("add")} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90">
+          <button onClick={() => openModal("add")} disabled={remaining <= 0} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus className="h-4 w-4" /> Add Savings
           </button>
-          <button onClick={() => openModal("deduct")} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent">
+          <button onClick={() => openModal("deduct")} disabled={totalSavings <= 0} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
             <Minus className="h-4 w-4" /> Deduct Savings
           </button>
         </div>
@@ -88,7 +105,18 @@ const SavingsPage = ({ totalSavings, savingsHistory, onAdd, onDeduct }: SavingsP
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm text-muted-foreground">Amount (₹)</label>
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" min="1" step="0.01" required className={inputClass} />
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                placeholder="0.00"
+                min="1"
+                step="0.01"
+                max={mode === "add" ? Math.max(0, remaining) : totalSavings}
+                required
+                className={inputClass}
+              />
+              {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
             </div>
             <div>
               <label className="mb-1.5 block text-sm text-muted-foreground">

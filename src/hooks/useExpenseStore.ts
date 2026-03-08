@@ -40,7 +40,6 @@ const CATEGORIES = ["Food", "Travel", "Shops", "Health", "Others"] as const;
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const today = () => new Date().toISOString().split("T")[0];
 
-// Helper to access recurring_expenses table (not yet in auto-generated types)
 const recurringTable = () => supabase.from("recurring_expenses" as any);
 
 export function useExpenseStore() {
@@ -147,7 +146,6 @@ export function useExpenseStore() {
 
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const remaining = deposit - totalSpent;
-  const savingsEstimate = remaining > 0 ? remaining * 0.2 : 0;
 
   const addExpense = useCallback(async (expense: Omit<Expense, "id">) => {
     if (!userId) return;
@@ -272,19 +270,82 @@ export function useExpenseStore() {
     else toast.error("Failed to delete recurring expense");
   }, [userId]);
 
+  // Start New Month: archive current month, set new deposit, optionally transfer remaining to savings
+  const startNewMonth = useCallback(async (newBudget: number, transferToSavings: boolean) => {
+    if (!userId) return;
+    const month = currentMonth();
+    const currentRemaining = deposit - totalSpent;
+
+    // Archive current month to history table (local state for now)
+    const record: MonthRecord = {
+      month,
+      deposit,
+      expenses: [...expenses],
+      savings: currentRemaining > 0 ? currentRemaining : 0,
+    };
+    setMonthlyHistory((p) => [record, ...p]);
+
+    // Transfer remaining to savings if chosen
+    if (transferToSavings && currentRemaining > 0) {
+      await supabase.from("savings").insert({
+        user_id: userId,
+        type: "add",
+        amount: currentRemaining,
+        reason: `Balance transferred from ${month}`,
+      });
+    }
+
+    // Clear current month expenses
+    await supabase.from("expenses").delete().eq("user_id", userId).eq("month", month);
+
+    // Set new deposit for the new month (use current month key since it's still the same calendar month,
+    // but we treat it as a fresh start)
+    const { data: existing } = await supabase
+      .from("deposits").select("id").eq("user_id", userId).eq("month", month).maybeSingle();
+    
+    let finalBudget = newBudget;
+    if (!transferToSavings && currentRemaining > 0) {
+      finalBudget += currentRemaining;
+    }
+
+    if (existing) {
+      await supabase.from("deposits").update({ amount: finalBudget }).eq("id", existing.id);
+    } else {
+      await supabase.from("deposits").insert({ user_id: userId, amount: finalBudget, month });
+    }
+
+    // Add recurring expenses automatically
+    for (const rec of recurringExpenses) {
+      await supabase.from("expenses").insert({
+        user_id: userId,
+        title: rec.title,
+        category: rec.category,
+        amount: rec.amount,
+        date: today(),
+        month,
+        is_default: false,
+        is_recurring: true,
+      });
+    }
+
+    await fetchAll();
+    toast.success("New month started successfully!");
+
+    return { newBudget: finalBudget, transferred: transferToSavings ? Math.max(0, currentRemaining) : 0 };
+  }, [userId, deposit, totalSpent, expenses, recurringExpenses]);
+
   const resetAll = useCallback(async () => {
     if (!userId) return;
-    const record: MonthRecord = { month: currentMonth(), deposit, expenses: [...expenses], savings: savingsEstimate };
+    const record: MonthRecord = { month: currentMonth(), deposit, expenses: [...expenses], savings: 0 };
     setMonthlyHistory((p) => [record, ...p]);
     await supabase.from("expenses").delete().eq("user_id", userId).eq("month", currentMonth());
     await supabase.from("deposits").delete().eq("user_id", userId).eq("month", currentMonth());
-    await supabase.from("savings").delete().eq("user_id", userId);
     await fetchAll();
     toast.success("All data has been reset");
-  }, [userId, deposit, expenses, savingsEstimate]);
+  }, [userId, deposit, expenses]);
 
   return {
-    expenses, deposit, totalSpent, remaining, savingsEstimate, totalSavings,
+    expenses, deposit, totalSpent, remaining, totalSavings,
     savingsHistory, monthlyHistory, recurringExpenses,
     defaultExpenses: [
       { name: "Mess Fee", category: "Food", amount: 3500 },
@@ -292,6 +353,6 @@ export function useExpenseStore() {
     ],
     addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit,
     addSavings, deductSavings, addRecurring, editRecurring, deleteRecurring,
-    resetAll, categories: CATEGORIES, loading,
+    startNewMonth, resetAll, categories: CATEGORIES, loading,
   };
 }
