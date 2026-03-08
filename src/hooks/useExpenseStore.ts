@@ -362,7 +362,7 @@ export function useExpenseStore() {
       { name: "Room Rent", category: "Others", amount: 5000 },
     ],
     addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit,
-    addSavings, deductSavings, addRecurring, editRecurring, deleteRecurring,
+    addSavings, deductSavings, resetSavings, addRecurring, editRecurring, deleteRecurring,
     startNewMonth, resetAll, categories: CATEGORIES, loading,
   };
 }
