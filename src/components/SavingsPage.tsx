@@ -14,6 +14,7 @@ interface SavingsPageProps {
   remaining: number;
   onAdd: (amount: number, note: string) => void;
   onDeduct: (amount: number, note: string) => void;
+  onReset: () => void;
 }
 
 const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct }: SavingsPageProps) => {
