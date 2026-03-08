@@ -17,8 +17,9 @@ interface SavingsPageProps {
   onReset: () => void;
 }
 
-const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct }: SavingsPageProps) => {
+const SavingsPage = ({ totalSavings, savingsHistory, remaining, onAdd, onDeduct, onReset }: SavingsPageProps) => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [mode, setMode] = useState<"add" | "deduct">("add");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
