@@ -51,8 +51,26 @@ const Dashboard = ({
     return result;
   };
 
+  const budgetUsagePercent = deposit > 0 ? (totalSpent / deposit) * 100 : 0;
+  const isWarning = budgetUsagePercent >= 80 && budgetUsagePercent < 100;
+  const isExceeded = budgetUsagePercent >= 100;
+
   return (
     <div className="animate-fade-in">
+      {deposit > 0 && isExceeded && (
+        <Alert variant="destructive" className="mb-4 border-destructive/50 bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Budget Exceeded</AlertTitle>
+          <AlertDescription>You have exceeded your monthly budget. Consider reducing expenses.</AlertDescription>
+        </Alert>
+      )}
+      {deposit > 0 && isWarning && !isExceeded && (
+        <Alert className="mb-4 border-warning/50 bg-warning/10 text-warning [&>svg]:text-warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Budget Warning</AlertTitle>
+          <AlertDescription className="text-warning/80">Warning: You have used {budgetUsagePercent.toFixed(0)}% of your monthly budget.</AlertDescription>
+        </Alert>
+      )}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard title="Monthly Deposit" value={deposit} icon={<Wallet className="h-5 w-5 text-info" />} clickable onClick={() => setIsDepositModalOpen(true)} />
         <SummaryCard title="Total Spent" value={totalSpent} icon={<TrendingDown className="h-5 w-5 text-destructive" />} />

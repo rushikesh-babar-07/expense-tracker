@@ -91,6 +91,10 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
             <label className="mb-1.5 block text-sm text-muted-foreground">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={inputClass} />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted-foreground">Description (optional)</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a note..." rows={2} className={`${inputClass} resize-none`} />
+          </div>
           {!editingExpense && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input

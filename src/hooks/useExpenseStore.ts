@@ -349,13 +349,20 @@ export function useExpenseStore() {
 
   const resetAll = useCallback(async () => {
     if (!userId) return;
-    const record: MonthRecord = { month: currentMonth(), deposit, expenses: [...expenses], savings: 0 };
-    setMonthlyHistory((p) => [record, ...p]);
-    await supabase.from("expenses").delete().eq("user_id", userId).eq("month", currentMonth());
-    await supabase.from("deposits").delete().eq("user_id", userId).eq("month", currentMonth());
-    await fetchAll();
+    await Promise.all([
+      supabase.from("expenses").delete().eq("user_id", userId),
+      supabase.from("deposits").delete().eq("user_id", userId),
+      supabase.from("savings").delete().eq("user_id", userId),
+      recurringTable().delete().eq("user_id", userId),
+    ]);
+    setExpenses([]);
+    setDeposit(0);
+    setTotalSavings(0);
+    setSavingsHistory([]);
+    setRecurringExpenses([]);
+    setMonthlyHistory([]);
     toast.success("All data has been reset");
-  }, [userId, deposit, expenses]);
+  }, [userId]);
 
   return {
     expenses, deposit, totalSpent, remaining, totalSavings,
