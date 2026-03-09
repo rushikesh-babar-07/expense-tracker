@@ -5,7 +5,8 @@ import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import DepositModal from "@/components/DepositModal";
 import StartNewMonthModal from "@/components/StartNewMonthModal";
-import type { Expense } from "@/hooks/useExpenseStore";
+import ExpenseAnalytics from "@/components/ExpenseAnalytics";
+import type { Expense, MonthRecord } from "@/hooks/useExpenseStore";
 
 interface DashboardProps {
   expenses: Expense[];
