@@ -24,7 +24,7 @@ interface DashboardProps {
 }
 
 const Dashboard = ({
-  expenses, deposit, totalSpent, remaining, totalSavings,
+  expenses, deposit, totalSpent, remaining, totalSavings, monthlyHistory,
   addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit, startNewMonth,
 }: DashboardProps) => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
