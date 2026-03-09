@@ -11,6 +11,7 @@ export interface Expense {
   date: string;
   isDefault?: boolean;
   isRecurring?: boolean;
+  description?: string;
 }
 
 export interface SavingsEntry {
