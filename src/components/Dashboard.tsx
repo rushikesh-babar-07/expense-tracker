@@ -5,7 +5,8 @@ import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import DepositModal from "@/components/DepositModal";
 import StartNewMonthModal from "@/components/StartNewMonthModal";
-import type { Expense } from "@/hooks/useExpenseStore";
+import ExpenseAnalytics from "@/components/ExpenseAnalytics";
+import type { Expense, MonthRecord } from "@/hooks/useExpenseStore";
 
 interface DashboardProps {
   expenses: Expense[];
@@ -13,6 +14,7 @@ interface DashboardProps {
   totalSpent: number;
   remaining: number;
   totalSavings: number;
+  monthlyHistory: MonthRecord[];
   addExpense: (e: Omit<Expense, "id">) => void;
   editExpense: (id: string, e: Omit<Expense, "id">) => void;
   deleteExpense: (id: string) => void;
@@ -22,7 +24,7 @@ interface DashboardProps {
 }
 
 const Dashboard = ({
-  expenses, deposit, totalSpent, remaining, totalSavings,
+  expenses, deposit, totalSpent, remaining, totalSavings, monthlyHistory,
   addExpense, editExpense, deleteExpense, updateDeposit, addToDeposit, startNewMonth,
 }: DashboardProps) => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -82,6 +84,8 @@ const Dashboard = ({
         </div>
         <ExpenseTable expenses={expenses} onDelete={withLoading(deleteExpense)} onEdit={handleEdit} />
       </div>
+
+      <ExpenseAnalytics expenses={expenses} monthlyHistory={monthlyHistory} />
 
       <AddExpenseModal
         open={isExpenseModalOpen}
