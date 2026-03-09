@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus, Loader2, CalendarPlus } from "lucide-react";
+import { Wallet, TrendingDown, PiggyBank, DollarSign, Plus, Loader2, CalendarPlus, AlertTriangle, AlertCircle } from "lucide-react";
 import SummaryCard from "@/components/SummaryCard";
 import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import DepositModal from "@/components/DepositModal";
 import StartNewMonthModal from "@/components/StartNewMonthModal";
 import ExpenseAnalytics from "@/components/ExpenseAnalytics";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import type { Expense, MonthRecord } from "@/hooks/useExpenseStore";
 
 interface DashboardProps {
