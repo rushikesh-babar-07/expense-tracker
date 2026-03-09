@@ -85,6 +85,8 @@ const Dashboard = ({
         <ExpenseTable expenses={expenses} onDelete={withLoading(deleteExpense)} onEdit={handleEdit} />
       </div>
 
+      <ExpenseAnalytics expenses={expenses} monthlyHistory={monthlyHistory} />
+
       <AddExpenseModal
         open={isExpenseModalOpen}
         onClose={handleCloseExpenseModal}

@@ -46,6 +46,7 @@ const Index = ({ store }: IndexProps) => {
             totalSpent={store.totalSpent}
             remaining={store.remaining}
             totalSavings={store.totalSavings}
+            monthlyHistory={store.monthlyHistory}
             addExpense={store.addExpense}
             editExpense={store.editExpense}
             deleteExpense={store.deleteExpense}
