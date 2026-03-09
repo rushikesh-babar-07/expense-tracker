@@ -84,6 +84,7 @@ export function useExpenseStore() {
           date: e.date,
           isDefault: e.is_default || false,
           isRecurring: e.is_recurring || false,
+          description: e.description || "",
         }))
       );
     }
