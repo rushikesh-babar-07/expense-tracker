@@ -184,7 +184,7 @@ export function useExpenseStore() {
     if (!userId) return;
     const { error } = await supabase
       .from("expenses")
-      .update({ title: data.name, category: data.category, amount: data.amount, date: data.date })
+      .update({ title: data.name, category: data.category, amount: data.amount, date: data.date, description: data.description || "" } as any)
       .eq("id", id);
     if (!error) {
       toast.success("Expense updated");
