@@ -40,11 +40,14 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
           {expenses.map((expense) => (
             <tr key={expense.id} className="border-b border-border/50 last:border-0 transition-colors duration-150 hover:bg-accent/30">
               <td className="py-3 text-card-foreground">
-                {expense.name}
+                <div>{expense.name}
                 {expense.isDefault && (
                   <span className="ml-2 rounded bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
                     Recurring
                   </span>
+                )}</div>
+                {expense.description && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{expense.description}</p>
                 )}
               </td>
               <td className="py-3">

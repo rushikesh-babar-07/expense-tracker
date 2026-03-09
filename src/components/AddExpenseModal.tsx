@@ -23,6 +23,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (editingExpense) {
@@ -31,12 +32,14 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       setCategory(editingExpense.category);
       setDate(editingExpense.date);
       setIsRecurring(editingExpense.isRecurring || false);
+      setDescription(editingExpense.description || "");
     } else {
       setName("");
       setAmount("");
       setCategory(CATEGORIES[0]);
       setDate(new Date().toISOString().split("T")[0]);
       setIsRecurring(false);
+      setDescription("");
     }
   }, [editingExpense, open]);
 
@@ -49,6 +52,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       category,
       date,
       isRecurring,
+      description: description.trim(),
     };
     if (editingExpense && onEdit) {
       onEdit(editingExpense.id, data);
@@ -86,6 +90,10 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
           <div>
             <label className="mb-1.5 block text-sm text-muted-foreground">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted-foreground">Description (optional)</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a note..." rows={2} className={`${inputClass} resize-none`} />
           </div>
           {!editingExpense && (
             <label className="flex items-center gap-2 cursor-pointer">

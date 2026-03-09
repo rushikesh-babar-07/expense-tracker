@@ -11,6 +11,7 @@ export interface Expense {
   date: string;
   isDefault?: boolean;
   isRecurring?: boolean;
+  description?: string;
 }
 
 export interface SavingsEntry {
@@ -83,6 +84,7 @@ export function useExpenseStore() {
           date: e.date,
           isDefault: e.is_default || false,
           isRecurring: e.is_recurring || false,
+          description: e.description || "",
         }))
       );
     }
@@ -158,7 +160,8 @@ export function useExpenseStore() {
       month: currentMonth(),
       is_default: expense.isDefault || false,
       is_recurring: expense.isRecurring || false,
-    });
+      description: expense.description || "",
+    } as any);
     if (!error) {
       if (expense.isRecurring) {
         await recurringTable().insert({
@@ -181,7 +184,7 @@ export function useExpenseStore() {
     if (!userId) return;
     const { error } = await supabase
       .from("expenses")
-      .update({ title: data.name, category: data.category, amount: data.amount, date: data.date })
+      .update({ title: data.name, category: data.category, amount: data.amount, date: data.date, description: data.description || "" } as any)
       .eq("id", id);
     if (!error) {
       toast.success("Expense updated");
@@ -346,13 +349,20 @@ export function useExpenseStore() {
 
   const resetAll = useCallback(async () => {
     if (!userId) return;
-    const record: MonthRecord = { month: currentMonth(), deposit, expenses: [...expenses], savings: 0 };
-    setMonthlyHistory((p) => [record, ...p]);
-    await supabase.from("expenses").delete().eq("user_id", userId).eq("month", currentMonth());
-    await supabase.from("deposits").delete().eq("user_id", userId).eq("month", currentMonth());
-    await fetchAll();
+    await Promise.all([
+      supabase.from("expenses").delete().eq("user_id", userId),
+      supabase.from("deposits").delete().eq("user_id", userId),
+      supabase.from("savings").delete().eq("user_id", userId),
+      recurringTable().delete().eq("user_id", userId),
+    ]);
+    setExpenses([]);
+    setDeposit(0);
+    setTotalSavings(0);
+    setSavingsHistory([]);
+    setRecurringExpenses([]);
+    setMonthlyHistory([]);
     toast.success("All data has been reset");
-  }, [userId, deposit, expenses]);
+  }, [userId]);
 
   return {
     expenses, deposit, totalSpent, remaining, totalSavings,
