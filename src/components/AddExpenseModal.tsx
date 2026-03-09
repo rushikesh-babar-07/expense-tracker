@@ -23,6 +23,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (editingExpense) {
@@ -31,12 +32,14 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       setCategory(editingExpense.category);
       setDate(editingExpense.date);
       setIsRecurring(editingExpense.isRecurring || false);
+      setDescription(editingExpense.description || "");
     } else {
       setName("");
       setAmount("");
       setCategory(CATEGORIES[0]);
       setDate(new Date().toISOString().split("T")[0]);
       setIsRecurring(false);
+      setDescription("");
     }
   }, [editingExpense, open]);
 
