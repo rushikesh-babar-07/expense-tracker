@@ -14,6 +14,7 @@ interface DashboardProps {
   totalSpent: number;
   remaining: number;
   totalSavings: number;
+  monthlyHistory: MonthRecord[];
   addExpense: (e: Omit<Expense, "id">) => void;
   editExpense: (id: string, e: Omit<Expense, "id">) => void;
   deleteExpense: (id: string) => void;
