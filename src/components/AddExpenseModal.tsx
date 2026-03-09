@@ -52,6 +52,7 @@ const AddExpenseModal = ({ open, onClose, onAdd, onEdit, editingExpense }: AddEx
       category,
       date,
       isRecurring,
+      description: description.trim(),
     };
     if (editingExpense && onEdit) {
       onEdit(editingExpense.id, data);
