@@ -160,7 +160,8 @@ export function useExpenseStore() {
       month: currentMonth(),
       is_default: expense.isDefault || false,
       is_recurring: expense.isRecurring || false,
-    });
+      description: expense.description || "",
+    } as any);
     if (!error) {
       if (expense.isRecurring) {
         await recurringTable().insert({
